@@ -1,6 +1,15 @@
 #include "raylib.h"
 
-int main()
+struct AnimationData
+{
+    Rectangle rec;
+    Vector2 pos;
+    int frame;
+    float update_time;
+    float running_time;
+};
+
+main()
 {
 
     // main window dimensions
@@ -11,39 +20,49 @@ int main()
     // initialize game window
     InitWindow(win_width, win_height, win_title);
 
-    // nebula hazard variables
+    // AnimationData for nebula hazards
+    // a better way of declaring structs and initializing struct members
     Texture2D nebula = LoadTexture("textures/12_nebula_spritesheet.png");
-    // this is a refactored way of initializing the Rectangle type
-    Rectangle nebula_rec{0.0, 0.0, nebula.width / 8, nebula.height / 8};
-    Vector2 neb_pos{win_width, win_height - nebula_rec.height};
+    AnimationData neb_data{
+        {0.0, 0.0, nebula.width / 8.0, nebula.height / 8.0}, // rectangle rec
+        {win_width, win_height - nebula.height / 8.0},       // Vector2 pos
+        0,                                                   // int frame
+        (1.0 / 12.0),                                        // float update_time
+        0.0                                                  // float running_time
+    };
+
+    AnimationData neb2_data{
+        {0.0, 0.0, nebula.width / 8.0, nebula.height / 8.0}, // rectangle rec
+        {win_width + 300, win_height - nebula.height / 8.0}, // Vector2 pos
+        0,                                                   // int frame
+        (1.0 / 16.0),                                        // float update_time
+        0.0                                                  // float running_time
+    };
 
     // nebula x velocity (pixels per second)
-    int neb_vel{-600};
+    int neb_vel{-200};
 
+    // showing one way of creating and initializing struct members
     // adding the scarfy spritesheet
     Texture2D scarfy = LoadTexture("textures/scarfy.png");
     // what rectangle we are getting off the sprite sheet
     // leaving this is in to illustrate that it's possible but prefer the above way of single line initialization
-    Rectangle scarfy_rec;
-    scarfy_rec.width = scarfy.width / 6;
-    scarfy_rec.height = scarfy.height;
-    scarfy_rec.x = 0;
-    scarfy_rec.y = 0;
+    AnimationData scarfy_data;
+    scarfy_data.rec.width = scarfy.width / 6;
+    scarfy_data.rec.height = scarfy.height;
+    scarfy_data.rec.x = 0;
+    scarfy_data.rec.y = 0;
     // where we want to draw scarfy
-    Vector2 scarfy_pos;
     // centering and placing on ground
-    scarfy_pos.x = win_width / 2 - scarfy_rec.width / 2;
-    scarfy_pos.y = win_height - scarfy_rec.height;
-
+    scarfy_data.pos.x = win_width / 2 - scarfy_data.rec.width / 2;
+    scarfy_data.pos.y = win_height - scarfy_data.rec.height;
     // animation frame
-    int frame{};
-
+    scarfy_data.frame = 0;
     // time between animation frames
     // updating animation 12 times per second - so this is 1/12th of a second
-    const float update_time{1.0 / 12.0};
-
+    scarfy_data.update_time = (1.0 / 12.0);
     // time since last update frame
-    float running_time{};
+    scarfy_data.running_time = 0.0;
 
     // acceleration due to gravity (pixels/sec)/sec
     const int gravity{1000};
@@ -91,14 +110,17 @@ int main()
         }
         // update nebula position
         neb_pos.x += neb_vel * dT;
+        // update secondd nebula position
+        neb2_pos.x += neb_vel * dT;
         // update scarfy position
         scarfy_pos.y += velocity * dT;
 
         // running time to keep track of time since last update of animation frame
         // updating running time each frame
         running_time += dT;
+        neb_running_time += dT;
 
-        // update animation frame - freeze while jumping
+        // update scarfy animation frame - freeze while jumping
         if (running_time >= update_time && !is_in_air)
         {
             // reset run time because it has reached 1/12th of a second or greater
@@ -115,8 +137,36 @@ int main()
             }
         }
 
+        // update nebula animation frame
+        if (neb_running_time >= neb_update_time)
+        {
+            neb_running_time = 0;
+            neb_rec.x = neb_frame * neb_rec.width;
+            neb_frame++;
+
+            if (neb_frame > 7)
+            {
+                neb_frame = 0;
+            }
+        }
+
+        // update nebula animation frame
+        if (neb2_running_time >= neb2_update_time)
+        {
+            neb2_running_time = 0;
+            neb2_rec.x = neb2_frame * neb2_rec.width;
+            neb2_frame++;
+
+            if (neb2_frame > 7)
+            {
+                neb2_frame = 0;
+            }
+        }
+
         // draw nebula hazard
-        DrawTextureRec(nebula, nebula_rec, neb_pos, WHITE);
+        DrawTextureRec(nebula, neb_rec, neb_pos, WHITE);
+        // draw second nebula hazard
+        DrawTextureRec(nebula, neb2_rec, neb2_pos, RED);
 
         // drawing scarfy
         // using color white because we don't want to tint scarfy
