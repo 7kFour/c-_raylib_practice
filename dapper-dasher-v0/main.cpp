@@ -11,9 +11,19 @@ int main()
     // initialize game window
     InitWindow(win_width, win_height, win_title);
 
+    // nebula hazard variables
+    Texture2D nebula = LoadTexture("textures/12_nebula_spritesheet.png");
+    // this is a refactored way of initializing the Rectangle type
+    Rectangle nebula_rec{0.0, 0.0, nebula.width / 8, nebula.height / 8};
+    Vector2 neb_pos{win_width, win_height - nebula_rec.height};
+
+    // nebula x velocity (pixels per second)
+    int neb_vel{-600};
+
     // adding the scarfy spritesheet
     Texture2D scarfy = LoadTexture("textures/scarfy.png");
     // what rectangle we are getting off the sprite sheet
+    // leaving this is in to illustrate that it's possible but prefer the above way of single line initialization
     Rectangle scarfy_rec;
     scarfy_rec.width = scarfy.width / 6;
     scarfy_rec.height = scarfy.height;
@@ -39,7 +49,7 @@ int main()
     const int gravity{1000};
 
     // ground check
-    bool is_in_airAir{false};
+    bool is_in_air{false};
 
     // jump velocity in pixels per second
     // negative value because negative is up
@@ -65,32 +75,33 @@ int main()
         {
             // rectangle on ground
             velocity = 0;
-            is_in_airAir = false;
+            is_in_air = false;
         }
         else
         {
             // rectangle is in the air
             velocity += gravity * dT;
-            is_in_airAir = true;
+            is_in_air = true;
         }
 
         // allow user to jump with space bar
-        if (IsKeyPressed(KEY_SPACE) && !is_in_airAir)
+        if (IsKeyPressed(KEY_SPACE) && !is_in_air)
         {
             velocity += jump_vel;
         }
-
-        // update position
+        // update nebula position
+        neb_pos.x += neb_vel * dT;
+        // update scarfy position
         scarfy_pos.y += velocity * dT;
 
         // running time to keep track of time since last update of animation frame
-        // updating running time
+        // updating running time each frame
         running_time += dT;
 
-        // update animation frame
-        if (running_time >= update_time)
+        // update animation frame - freeze while jumping
+        if (running_time >= update_time && !is_in_air)
         {
-            // reset run time for next iteration of check
+            // reset run time because it has reached 1/12th of a second or greater
             running_time = 0;
 
             // iterate through the spritesheet
@@ -103,6 +114,9 @@ int main()
                 frame = 0;
             }
         }
+
+        // draw nebula hazard
+        DrawTextureRec(nebula, nebula_rec, neb_pos, WHITE);
 
         // drawing scarfy
         // using color white because we don't want to tint scarfy
@@ -118,5 +132,6 @@ int main()
     }
     // must unload texture and close window to shut program down properly
     UnloadTexture(scarfy);
+    UnloadTexture(nebula);
     CloseWindow();
 }
