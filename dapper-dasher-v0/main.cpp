@@ -13,31 +13,34 @@ main()
 {
 
     // main window dimensions
-    const int win_height{380};
-    const int win_width{512};
+    const int window_dimensions[2]{512, 380};
     const char *win_title = "Dapper Dasher";
 
     // initialize game window
-    InitWindow(win_width, win_height, win_title);
+    InitWindow(window_dimensions[0], window_dimensions[1], win_title);
 
     // AnimationData for nebula hazards
     // a better way of declaring structs and initializing struct members
     Texture2D nebula = LoadTexture("textures/12_nebula_spritesheet.png");
-    AnimationData neb_data{
-        {0.0, 0.0, nebula.width / 8.0, nebula.height / 8.0}, // rectangle rec
-        {win_width, win_height - nebula.height / 8.0},       // Vector2 pos
-        0,                                                   // int frame
-        (1.0 / 12.0),                                        // float update_time
-        0.0                                                  // float running_time
-    };
 
-    AnimationData neb2_data{
-        {0.0, 0.0, nebula.width / 8.0, nebula.height / 8.0}, // rectangle rec
-        {win_width + 300, win_height - nebula.height / 8.0}, // Vector2 pos
-        0,                                                   // int frame
-        (1.0 / 16.0),                                        // float update_time
-        0.0                                                  // float running_time
-    };
+    // array for hazards
+    const int size_of_nebulae{6};
+    AnimationData nebulae[size_of_nebulae]{};
+
+    // initializing the nebulae in the array
+    for (int i = 0; i < size_of_nebulae; i++)
+    {
+        nebulae[i].rec.x = 0.0;
+        nebulae[i].rec.y = 0.0;
+        nebulae[i].rec.width = nebula.width / 8.0;
+        nebulae[i].rec.height = nebula.height / 8.0;
+        // not doing in loop pos.x because neb1/2 have different values
+        nebulae[i].pos.y = window_dimensions[1] - nebula.height / 8.0;
+        nebulae[i].frame = 0;
+        nebulae[i].update_time = 0.0;
+        nebulae[i].running_time = 0.0;
+        nebulae[i].pos.x = window_dimensions[0] + (i * 300);
+    }
 
     // nebula x velocity (pixels per second)
     int neb_vel{-200};
@@ -54,8 +57,8 @@ main()
     scarfy_data.rec.y = 0;
     // where we want to draw scarfy
     // centering and placing on ground
-    scarfy_data.pos.x = win_width / 2 - scarfy_data.rec.width / 2;
-    scarfy_data.pos.y = win_height - scarfy_data.rec.height;
+    scarfy_data.pos.x = window_dimensions[0] / 2 - scarfy_data.rec.width / 2;
+    scarfy_data.pos.y = window_dimensions[1] - scarfy_data.rec.height;
     // animation frame
     scarfy_data.frame = 0;
     // time between animation frames
@@ -89,8 +92,10 @@ main()
         // delta time (time since last frame)
         const float dT{GetFrameTime()};
 
+        // Start Game Logic
+
         // check rectangle position and apply gravity if it's not on the ground
-        if (scarfy_pos.y >= win_height - scarfy_rec.height)
+        if (scarfy_data.pos.y >= window_dimensions[1] - scarfy_data.rec.height)
         {
             // rectangle on ground
             velocity = 0;
@@ -108,73 +113,68 @@ main()
         {
             velocity += jump_vel;
         }
-        // update nebula position
-        neb_pos.x += neb_vel * dT;
-        // update secondd nebula position
-        neb2_pos.x += neb_vel * dT;
+
+        // update nebulae positions
+        for (int i = 0; i < size_of_nebulae; i++)
+        {
+            nebulae[i].pos.x += neb_vel * dT;
+        }
+
         // update scarfy position
-        scarfy_pos.y += velocity * dT;
+        scarfy_data.pos.y += velocity * dT;
 
         // running time to keep track of time since last update of animation frame
         // updating running time each frame
-        running_time += dT;
-        neb_running_time += dT;
+        scarfy_data.running_time += dT;
+        for (int i = 0; i < size_of_nebulae; i++)
+        {
+            nebulae[i].running_time += dT;
+        }
 
         // update scarfy animation frame - freeze while jumping
-        if (running_time >= update_time && !is_in_air)
+        if (scarfy_data.running_time >= scarfy_data.update_time && !is_in_air)
         {
             // reset run time because it has reached 1/12th of a second or greater
-            running_time = 0;
+            scarfy_data.running_time = 0;
 
             // iterate through the spritesheet
-            scarfy_rec.x = frame * scarfy_rec.width;
-            frame++;
+            scarfy_data.rec.x = scarfy_data.frame * scarfy_data.rec.width;
+            scarfy_data.frame++;
 
             // set frame back to beginning of spritesheet if it reaches the end
-            if (frame > 5)
+            if (scarfy_data.frame > 5)
             {
-                frame = 0;
+                scarfy_data.frame = 0;
             }
         }
 
         // update nebula animation frame
-        if (neb_running_time >= neb_update_time)
+        for (int i = 0; i < size_of_nebulae; i++)
         {
-            neb_running_time = 0;
-            neb_rec.x = neb_frame * neb_rec.width;
-            neb_frame++;
-
-            if (neb_frame > 7)
+            if (nebulae[i].running_time >= nebulae[i].update_time)
             {
-                neb_frame = 0;
+                nebulae[i].running_time = 0;
+                nebulae[i].rec.x = nebulae[i].frame * nebulae[i].rec.width;
+                nebulae[i].frame++;
+
+                if (nebulae[i].frame > 7)
+                {
+                    nebulae[i].frame = 0;
+                }
             }
         }
 
-        // update nebula animation frame
-        if (neb2_running_time >= neb2_update_time)
+        // draw nebulae hazards
+        for (int i = 0; i < size_of_nebulae; i++)
         {
-            neb2_running_time = 0;
-            neb2_rec.x = neb2_frame * neb2_rec.width;
-            neb2_frame++;
-
-            if (neb2_frame > 7)
-            {
-                neb2_frame = 0;
-            }
+            DrawTextureRec(nebula, nebulae[i].rec, nebulae[i].pos, WHITE);
         }
-
-        // draw nebula hazard
-        DrawTextureRec(nebula, neb_rec, neb_pos, WHITE);
-        // draw second nebula hazard
-        DrawTextureRec(nebula, neb2_rec, neb2_pos, RED);
 
         // drawing scarfy
         // using color white because we don't want to tint scarfy
-        DrawTextureRec(scarfy, scarfy_rec, scarfy_pos, WHITE);
+        DrawTextureRec(scarfy, scarfy_data.rec, scarfy_data.pos, WHITE);
 
         // stop drawing
-
-        // Start Game Logic
 
         // End Game Logic
 
