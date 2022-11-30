@@ -34,7 +34,7 @@ AnimationData updateAnimData(AnimationData data, float deltaTime, int maxFrame) 
 int main() {
     // main window dimensions
     const int window_dimensions[2]{512, 380};
-    const char *win_title = "Dapper Dasher";
+    const char* win_title = "Dapper Dasher";
 
     // initialize game window
     InitWindow(window_dimensions[0], window_dimensions[1], win_title);
